@@ -1,2 +1,2 @@
-# ROP_01
-Metodika - Jira - kanban
+# ROP_02
+Metodika - Jira - Scrum
