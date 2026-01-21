@@ -397,3 +397,263 @@ $foto = $_POST['picture'];
 $trida = $_POST['subject'];
 $bio = $_POST['Kbio'] ?? '';
 
+
+$stmt = $db->prepare("UPDATE Vedeni SET jmeno=?, email=?, foto=?, trida=?, bio=? WHERE funkce=?");
+$stmt->execute([$jmeno, $email, $foto, $trida, $bio, $funkce]);
+
+
+header("Location: /aboutusSet");
+exit;
+
+});
+Flight::route('/ulozit2', function () {
+    $db = Flight::db();
+ if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+
+$text = $_POST['zprava'];
+
+
+
+$stmt = $db->prepare("UPDATE Others SET text=? WHERE ID=?");
+$stmt->execute([$text,1]);
+
+
+header("Location: /aboutusSet");
+exit;
+
+});
+Flight::route('/zmenit', function () {
+      $db = Flight::db();
+
+ 
+    if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+    $username = $_COOKIE['username'];
+
+  
+    $oldPass = $_POST['spas'] ?? '';
+    $newPass = $_POST['npas'] ?? '';
+
+    $stmt = $db->prepare("SELECT pass FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+   
+    if(!password_verify($oldPass, $user['pass'])){
+        header("Location: /changepass?error");
+        exit;
+    }
+
+  
+    $hashedNewPass = password_hash($newPass, PASSWORD_DEFAULT);
+    $stmt = $db->prepare("UPDATE users SET pass = ? WHERE name = ?");
+    $stmt->execute([$hashedNewPass, $username]);
+
+   
+    header("Location: /admini");
+    exit;
+});
+Flight::route('/prihlas', function () {
+   $db = Flight::db();
+
+
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
+
+$stmt = $db->prepare("SELECT pass, role FROM users WHERE name = ?");
+$stmt->execute([$username]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if(!$user){
+      
+    header("Location: /login");
+   
+
+     exit;
+}
+
+
+if(password_verify($password, $user['pass'])){
+    
+    session_start();
+    $_SESSION['username'] = $username;
+    $_SESSION['role'] = $user['role'];
+
+     setcookie("username", $username, time() + 7*24*60*60, "/");
+
+    
+    header("Location: /admini"); 
+    exit;
+}else{
+   
+    header("Location: /login");
+  
+    exit;
+} 
+});
+Flight::route('/nuser', function () {
+     $db = Flight::db();
+
+   
+    if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+
+    $username = $_COOKIE['username'];
+
+   
+    $stmt = $db->prepare("SELECT role FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    
+
+    $role = $user['role'];
+    if($role === 1)
+    {
+      header("Location: /admini");
+    }
+     require_once 'pages/administace/nuser.php';
+});
+Flight::route('/pridat', function () {
+    
+$db = Flight::db();
+
+$role = $_POST['role'];
+$name = $_POST['name'];
+$pass = $_POST['npas'];
+
+$stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE name = ?");
+$stmt->execute([$name]);
+$userExists = $stmt->fetchColumn();
+
+if($userExists){
+    header("Location: /nuser?error=existuje");
+    exit;
+}
+
+$hashedPass = password_hash($pass, PASSWORD_DEFAULT);
+
+$stmt = $db->prepare("INSERT INTO users (name, pass, role) VALUES (?, ?, ?)");
+$stmt->execute([$name, $hashedPass, $role]);
+
+header("Location: /users");
+});
+Flight::route('/deluser', function () {
+$db = Flight::db();
+   if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+    $username = $_COOKIE['username'];
+    $stmt = $db->prepare("SELECT role FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   
+    $role = $user['role'];
+if($role === 1)
+{
+     header("Location: /admini");
+     exit;
+}
+$user = $_GET['user'];
+     require_once 'pages/administace/deluser.php';
+});
+Flight::route('/delete', function () {
+$db = Flight::db();
+   if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+    $username = $_COOKIE['username'];
+    $stmt = $db->prepare("SELECT role FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   
+    $role = $user['role'];
+if($role === 1)
+{
+     header("Location: /admini");
+     exit;
+}
+$bool = $_POST['bool'];
+$name = $_POST['name'];
+if($bool === "1")
+{
+$stmt = $db->prepare("DELETE FROM users WHERE name = ?");
+        $stmt->execute([$name]);
+
+        header("Location: /users");
+        exit;
+}
+else{
+header("Location: /users");
+     exit;
+}
+     
+});
+Flight::route('/forget', function () {
+$db = Flight::db();
+   if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+    $username = $_COOKIE['username'];
+    $stmt = $db->prepare("SELECT role FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   
+    $role = $user['role'];
+if($role === 1)
+{
+     header("Location: /admini");
+     exit;
+}
+ $name = $_POST['name'];
+    $newPass = $_POST['npas'];
+
+ 
+    $hashedNewPass = password_hash($newPass, PASSWORD_DEFAULT);
+    $stmt = $db->prepare("UPDATE users SET pass = ? WHERE name = ?");
+    $stmt->execute([$hashedNewPass, $name]);
+header("Location: /users");
+    exit;
+     
+});
+Flight::route('/change-role', function () {
+$db = Flight::db();
+   if(!isset($_COOKIE['username'])){
+        header("Location: /login");
+        exit;
+    }
+    $username = $_COOKIE['username'];
+    $stmt = $db->prepare("SELECT role FROM users WHERE name = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   
+    $role = $user['role'];
+if($role === 1)
+{
+     header("Location: /admini");
+     exit;
+}
+$role = $_POST['role'];
+$name = $_POST['name'];
+ $newRole =$_POST['role'];
+    $name = $_POST['name'];
+
+    
+        $stmt = $db->prepare("UPDATE users SET role = ? WHERE name = ?");
+        $stmt->execute([$newRole, $name]);
+  
+
+    header("Location: /users");
+    exit;
+});
+Flight::start();
